@@ -27,7 +27,7 @@ for file in $HTML_FILES; do
     fi
     
     # Проверка HTML структуры
-    if ! curl -s "$BASE_URL/$filename" | grep -q -E "<!DOCTYPE html>|<!doctype html>"; then
+    if ! curl -s "$BASE_URL/$filename" | grep -q -E "<!DOCTYPE HTML>|<!doctype html>"; then
         echo "❌ $filename: отсутствует DOCTYPE"
         exit 1
     fi
