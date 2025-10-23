@@ -2,7 +2,7 @@
 
 echo "🚀 Начинаем развертывание демо-сайта..."
 
-SITE_SOURCE="/home/uwu/devopsLab1/static-website-example"
+SITE_SOURCE="/home/uwu/devops/static-website-example"
 
 echo "📁 Используем локальную папку: $SITE_SOURCE"
 
@@ -34,7 +34,7 @@ echo "✅ Файлы сайта скопированы"
 
 # Копируем конфигурацию nginx
 echo "⚙️  Применяем конфигурацию nginx..."
-sudo cp "/home/uwu/devopsLab1/devops/nginx.conf" /etc/nginx/sites-available/demo-site
+sudo cp "/home/uwu/devops/devops/nginx.conf" /etc/nginx/sites-available/demo-site
 sudo ln -sf /etc/nginx/sites-available/demo-site /etc/nginx/sites-enabled/
 
 # Проверяем конфигурацию

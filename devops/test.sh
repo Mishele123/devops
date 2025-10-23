@@ -3,7 +3,7 @@
 echo "🧪 Запуск автоматических тестов для всех HTML-страниц..."
 
 BASE_URL="http://localhost:8181"
-WEBSITE_DIR="/home/uwu/devopsLab1/static-website-example"
+WEBSITE_DIR="/home/uwu/devops/static-website-example"
 
 # Находим все HTML файлы
 HTML_FILES=$(find "$WEBSITE_DIR" -name "*.html" -type f)
