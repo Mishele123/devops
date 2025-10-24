@@ -116,6 +116,10 @@ class WebhookHandler(BaseHTTPRequestHandler):
             self._handle_pr_event(payload)
         elif event_type == 'release':
             self._handle_release_event(payload)
+
+        elif enent_type == 'create':
+            print(f"Создан {payload.get('ref_type')}: {payload.get('ref')}")
+            return True
         else:
             print(f"   ℹ️  Событие '{event_type}' - базовое логирование")
 
