@@ -36,7 +36,7 @@ jobs:
         if [ ! -d "static-website-example" ]; then
           exit 1
         fi
-        
+    
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1
       with:
@@ -53,9 +53,9 @@ jobs:
             chmod +x test.sh
             ./test.sh
           fi
-          sudo cp nginx.conf /etc/nginx/sites-available/default
-          sudo systemctl restart nginx
-          
+          chmod +x deploy.sh
+          ./deploy.sh     
+    
     - name: Verify deployment
       run: |
         APP_URL="http://app.${{ env.ID }}.${{ env.PROXY }}"
