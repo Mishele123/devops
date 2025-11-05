@@ -15,6 +15,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        token: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -56,6 +57,12 @@ jobs:
         [ -f "install-nginx.sh" ] && echo "✅ install-nginx.sh exists" || echo "❌ install-nginx.sh missing"
         [ -f "generate-ssh-keys.sh" ] && echo "✅ generate-ssh-keys.sh exists" || echo "❌ generate-ssh-keys.sh missing"
         [ -f "test.sh" ] && echo "✅ test.sh exists" || echo "❌ test.sh missing"
+        
+    - name: Initialize and update submodules
+      run: |
+        echo "Initializing submodules..."
+        git submodule update --init --recursive
+        echo "✅ Submodules initialized"
         
     - name: Run custom tests
       run: |
