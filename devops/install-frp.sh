@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Скрипт установки FRP клиента
+# Скрипт установки FRP клиента для GitHub Actions
 #
 # Использование:
-#   sudo ./install-frp.sh [SERVER_ADDR] [AUTH_TOKEN] [USERNAME]
+#   sudo ./install-frp.sh [SERVER_ADDR] [AUTH_TOKEN] [USERNAME] [SSH_PORT]
 #
 # Примеры:
-#   sudo ./install-frp.sh course.prafdin.ru mytoken prafdin
+#   sudo ./install-frp.sh course.prafdin.ru mytoken prafdin 2200
 
 set -e
 
@@ -14,12 +14,14 @@ set -e
 SERVER_ADDR=${1:-"course.prafdin.ru"}
 AUTH_TOKEN=${2:-"mytoken"}
 USERNAME=${3:-"prafdin"}
+SSH_PORT=${4:-"2200"}
 
-echo "🚀 Установка FRP клиента..."
+echo "🚀 Установка FRP клиента для GitHub Actions..."
 echo "📋 Параметры:"
 echo "   Сервер: $SERVER_ADDR"
 echo "   Токен: ${AUTH_TOKEN:0:8}***"
 echo "   Пользователь: $USERNAME"
+echo "   SSH порт: $SSH_PORT"
 echo ""
 
 # Проверяем права суперпользователя
@@ -27,12 +29,22 @@ if [[ $EUID -ne 0 ]]; then
    echo "❌ Этот скрипт должен запускаться с правами root (sudo)"
    echo ""
    echo "📝 Использование:"
-   echo "   sudo ./install-frp.sh [SERVER_ADDR] [AUTH_TOKEN] [USERNAME]"
+   echo "   sudo ./install-frp.sh [SERVER_ADDR] [AUTH_TOKEN] [USERNAME] [SSH_PORT]"
    echo ""
    echo "🔧 Примеры:"
-   echo "   sudo ./install-frp.sh course.prafdin.ru mytoken prafdin"
+   echo "   sudo ./install-frp.sh course.prafdin.ru mytoken prafdin 2200"
    exit 1
 fi
+
+# Устанавливаем и настраиваем SSH сервер
+echo "📥 Устанавливаем SSH сервер..."
+apt update
+apt install -y openssh-server
+
+echo "🔒 Отключаем аутентификацию по паролю SSH..."
+sed -i -E 's/^#?PasswordAuthentication[[:space:]]+yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+systemctl enable ssh
+systemctl restart ssh
 
 # Создаем директорию для FRP
 mkdir -p /etc/frp
@@ -57,14 +69,6 @@ serverPort = 7000
 auth.method = "token"
 auth.token = "$AUTH_TOKEN"
 
-# Прокси для webhook сервера
-[[proxies]]
-name = "hook-$USERNAME"
-type = "http"
-localIP = "127.0.0.1"
-localPort = 8080
-customDomains = ["webhook.$USERNAME.$SERVER_ADDR"]
-
 # Прокси для веб-приложения
 [[proxies]]
 name = "app-$USERNAME"
@@ -72,6 +76,14 @@ type = "http"
 localIP = "127.0.0.1"
 localPort = 8181
 customDomains = ["app.$USERNAME.$SERVER_ADDR"]
+
+# Прокси для SSH доступа GitHub Actions
+[[proxies]]
+name = "ssh-$USERNAME"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 22
+remotePort = $SSH_PORT
 EOF
 
 echo "✅ Конфигурация сгенерирована в /etc/frp/frpc.toml"
@@ -100,8 +112,8 @@ echo "   sudo journalctl -u frpc -f     # Смотреть логи"
 echo "   sudo nano /etc/frp/frpc.toml   # Редактировать конфиг"
 echo ""
 echo "🌐 URLs для вашей конфигурации:"
-echo "   Webhook URL: http://webhook.$USERNAME.$SERVER_ADDR"
 echo "   App URL: http://app.$USERNAME.$SERVER_ADDR"
+echo "   SSH доступ: ssh -p $SSH_PORT ваш_логин@$SERVER_ADDR"
 echo ""
 echo "⚙️  Для изменения конфигурации отредактируйте:"
 echo "   /etc/frp/frpc.toml"
