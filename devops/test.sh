@@ -2,13 +2,13 @@
 
 echo "🧪 Запуск CI тестов для HTML-страниц..."
 
-# Используем относительный путь
-WEBSITE_DIR="static-website-example"
+WEBSITE_DIR="../static-website-example"
 
 if [ ! -d "$WEBSITE_DIR" ]; then
     echo "❌ Директория $WEBSITE_DIR не найдена"
     echo "Текущая директория: $(pwd)"
-    ls -la
+    echo "Содержимое родительской директории:"
+    ls -la ..
     exit 1
 fi
 
