@@ -109,15 +109,15 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/${{ github.repository }}:docker-lab3
-          ghcr.io/${{ github.repository }}:latest
+          ghcr.io/mishele123/devops:docker-lab3
+          ghcr.io/mishele123/devops:latest
         labels: |
-          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          org.opencontainers.image.source=https://github.com/mishele123/devops
         cache-from: type=gha
         cache-to: type=gha,mode=max
         
     - name: Verify pushed image
       run: |
         echo "Docker image successfully built and pushed to GitHub Container Registry"
-        echo "Image: ghcr.io/${{ github.repository }}:docker-lab3"
-        echo "Image: ghcr.io/${{ github.repository }}:latest"
+        echo "Image: ghcr.io/mishele123/devops:docker-lab3"
+        echo "Image: ghcr.io/mishele123/devops:latest"
