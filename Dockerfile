@@ -4,6 +4,8 @@ WORKDIR /usr/share/nginx/html
 
 COPY static-website-example/ .
 
-EXPOSE 8080
+COPY devops/nginx-docker.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 8282
 
 CMD ["nginx", "-g", "daemon off;"]
