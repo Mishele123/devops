@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [ main, master ]
 
-permissions:
-  contents: read
-  packages: write
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -85,10 +81,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/docker-lab3')
     
-    permissions:
-      packages: write
-      contents: read
-      
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -96,28 +88,36 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       
-    - name: Log in to GitHub Container Registry
+    - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        
+    - name: Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/devops
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix=
+          type=raw,value=latest,enable={{is_default_branch}}
         
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
         push: true
-        tags: |
-          ghcr.io/mishele123/devops:docker-lab3
-          ghcr.io/mishele123/devops:latest
-        labels: |
-          org.opencontainers.image.source=https://github.com/mishele123/devops
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
         
     - name: Verify pushed image
       run: |
-        echo "Docker image successfully built and pushed to GitHub Container Registry"
-        echo "Image: ghcr.io/mishele123/devops:docker-lab3"
-        echo "Image: ghcr.io/mishele123/devops:latest"
+        echo "Docker image successfully built and pushed to Docker Hub"
+        echo "Tags: ${{ steps.meta.outputs.tags }}"
+        echo "View at: https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/devops"
