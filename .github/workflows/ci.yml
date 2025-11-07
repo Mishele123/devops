@@ -94,30 +94,20 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
         
-    - name: Extract metadata for Docker
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/devops
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix=
-          type=raw,value=latest,enable={{is_default_branch}}
-        
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/devops:docker-lab3
+          ${{ secrets.DOCKERHUB_USERNAME }}/devops:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
         
     - name: Verify pushed image
       run: |
         echo "Docker image successfully built and pushed to Docker Hub"
-        echo "Tags: ${{ steps.meta.outputs.tags }}"
+        echo "Image: ${{ secrets.DOCKERHUB_USERNAME }}/devops:docker-lab3"
+        echo "Image: ${{ secrets.DOCKERHUB_USERNAME }}/devops:latest"
         echo "View at: https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/devops"
