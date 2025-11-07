@@ -16,6 +16,7 @@ env:
   ID: 'barsukov'
   PROXY: 'course.prafdin.ru'
   DOCKER_IMAGE_NAME: 'app-barsukov'
+  DOCKER_REGISTRY: 'ghcr.io'
 
 jobs:
   deploy:
@@ -27,27 +28,26 @@ jobs:
       with:
         submodules: recursive
         
-    - name: Verify application structure
-      run: |
-        echo "Checking application structure..."
-        [ -d "static-website-example" ] && echo "✅ static-website-example directory found" || echo "⚠️ static-website-example directory not found"
-        [ -f "Dockerfile" ] && echo "✅ Dockerfile found" || echo "❌ Dockerfile not found"
-        ls -la
-        
-    - name: Log in to Docker Hub
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
       uses: docker/login-action@v3
       with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: ./Dockerfile
         push: true
         tags: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
-          ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.ref_name }}
+          ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.ref_name }}
+        # БЕЗ КЭШИРОВАНИЯ для простоты
     
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1
@@ -57,34 +57,28 @@ jobs:
         username: ${{ env.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          set -e  # Exit on any error
-          
+          set -e
           echo "=== Starting deployment ==="
           
-          # Login to Docker Hub
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          # Login to container registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.DOCKER_REGISTRY }} -u ${{ github.actor }} --password-stdin
           
           echo "=== Pulling latest Docker image ==="
-          # Pull latest Docker image
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          docker pull ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           
           echo "=== Stopping existing container ==="
-          # Stop and remove existing container if running
           docker stop ${{ env.DOCKER_IMAGE_NAME }} 2>/dev/null || echo "Container not running"
           docker rm ${{ env.DOCKER_IMAGE_NAME }} 2>/dev/null || echo "Container does not exist"
           
           echo "=== Starting new container ==="
-          # Run new container with proper configuration
           docker run -d \
             --name ${{ env.DOCKER_IMAGE_NAME }} \
             --restart unless-stopped \
             -p 8080:80 \
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           
-          echo "=== Cleaning up old images ==="
-          # Clean up old images
+          echo "=== Cleaning up ==="
           docker image prune -f
           
-          echo "=== Deployment completed successfully ==="
-          echo "Container status:"
+          echo "=== Deployment completed ==="
           docker ps --filter "name=${{ env.DOCKER_IMAGE_NAME }}"
