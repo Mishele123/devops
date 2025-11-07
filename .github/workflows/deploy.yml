@@ -12,11 +12,6 @@ env:
   SSH_HOST: 'course.prafdin.ru'
   SSH_PORT: '2457'
   SSH_USERNAME: 'uwu'
-  APP_DIR: '/home/uwu/devops'
-  ID: 'barsukov'
-  PROXY: 'course.prafdin.ru'
-  DOCKER_IMAGE_NAME: 'app-barsukov'
-  DOCKER_REGISTRY: 'ghcr.io'
 
 jobs:
   deploy:
@@ -31,12 +26,11 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       
-    - name: Log in to Container Registry
+    - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.DOCKER_REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
     
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -45,9 +39,8 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: |
-          ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
-          ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.ref_name }}
-        # БЕЗ КЭШИРОВАНИЯ для простоты
+          ${{ secrets.DOCKERHUB_USERNAME }}/devops:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/devops:${{ github.ref_name }}
     
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1
@@ -60,25 +53,27 @@ jobs:
           set -e
           echo "=== Starting deployment ==="
           
-          # Login to container registry
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.DOCKER_REGISTRY }} -u ${{ github.actor }} --password-stdin
+          # Login to Docker Hub
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
           
           echo "=== Pulling latest Docker image ==="
-          docker pull ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops:latest
           
           echo "=== Stopping existing container ==="
-          docker stop ${{ env.DOCKER_IMAGE_NAME }} 2>/dev/null || echo "Container not running"
-          docker rm ${{ env.DOCKER_IMAGE_NAME }} 2>/dev/null || echo "Container does not exist"
+          docker stop devops-app 2>/dev/null || echo "Container not running"
+          docker rm devops-app 2>/dev/null || echo "Container does not exist"
           
           echo "=== Starting new container ==="
           docker run -d \
-            --name ${{ env.DOCKER_IMAGE_NAME }} \
+            --name devops-app \
             --restart unless-stopped \
             -p 8080:80 \
-            ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops:latest
           
           echo "=== Cleaning up ==="
           docker image prune -f
           
           echo "=== Deployment completed ==="
-          docker ps --filter "name=${{ env.DOCKER_IMAGE_NAME }}"
+          echo "Container status:"
+          docker ps --filter "name=devops-app"
+          echo "App should be available at: http://${{ env.SSH_HOST }}:8080"
