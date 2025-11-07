@@ -67,13 +67,26 @@ jobs:
           docker run -d \
             --name devops-app \
             --restart unless-stopped \
-            -p 8080:80 \
+            -p 8080:8282 \
             ${{ secrets.DOCKERHUB_USERNAME }}/devops:latest
+          
+          echo "=== Waiting for container to start ==="
+          sleep 5
+          
+          echo "=== Diagnostic information ==="
+          echo "1. Container status:"
+          docker ps
+          echo ""
+          
+          echo "2. Container logs:"
+          docker logs devops-app
+          echo ""
+          
+          echo "3. Testing application..."
+          curl -f http://localhost:8080/ && echo "✅ Application is working!" || echo "❌ Application failed"
           
           echo "=== Cleaning up ==="
           docker image prune -f
           
           echo "=== Deployment completed ==="
-          echo "Container status:"
-          docker ps --filter "name=devops-app"
-          echo "App should be available at: http://${{ env.SSH_HOST }}:8080"
+          echo "App should be available at: http://app.barsukov.course.prafdin.ru/"
